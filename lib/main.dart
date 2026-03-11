@@ -2,10 +2,14 @@
 import 'package:flutter/material.dart';
 // 앱 안에서 웹사이트를 보여주는 WebView 패키지
 import 'package:webview_flutter/webview_flutter.dart';
-// Android 전용 WebView 설정 패키지 (파일 업로드 등)
-import 'package:webview_flutter_android/webview_flutter_android.dart';
 // Flutter ↔ Android 네이티브 통신 패키지
 import 'package:flutter/services.dart';
+// 플랫폼 감지용 (Android인지 iOS인지 확인)
+import 'dart:io' show Platform;
+
+// Android 전용 import (Android에서만 로드됨)
+import 'package:webview_flutter_android/webview_flutter_android.dart'
+    if (dart.library.html) 'package:webview_flutter/webview_flutter.dart';
 
 // 앱 시작점 - 앱을 실행시키는 함수
 void main() {
@@ -20,8 +24,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Fake Detector',       // 앱 이름
-      debugShowCheckedModeBanner: false, // 우측 상단 DEBUG 배너 숨김
+      title: 'Fake Detector',            // 앱 이름
+      debugShowCheckedModeBanner: false,  // 우측 상단 DEBUG 배너 숨김
       theme: ThemeData(
         // 앱 전체 색상 테마를 파란색 계열로 설정
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -54,13 +58,18 @@ class _WebViewPageState extends State<WebViewPage> {
   void initState() {
     super.initState();
 
+    // 플랫폼별 User-Agent 설정
+    // iOS는 Safari, Android는 Chrome 브라우저인 척 해서 웹사이트가 모바일 버전으로 응답하게 함
+    final String userAgent = Platform.isIOS
+        ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+        : 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36';
+
     // WebViewController 초기화 및 설정
     _controller = WebViewController()
       // JavaScript 완전 허용 (웹사이트 정상 동작을 위해 필요)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      // 모바일 크롬 브라우저인 척 하는 User-Agent 설정
-      // 이게 없으면 서버가 PC 버전으로 응답할 수 있음
-      ..setUserAgent('Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36')
+      // 플랫폼에 맞는 User-Agent 설정
+      ..setUserAgent(userAgent)
       // 페이지 로딩 관련 이벤트 처리
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -78,7 +87,7 @@ class _WebViewPageState extends State<WebViewPage> {
       ..loadRequest(Uri.parse('https://fake-detector.kro.kr:25000/'));
 
     // Android 플랫폼인지 확인 후 파일 업로드 설정
-    if (_controller.platform is AndroidWebViewController) {
+    if (Platform.isAndroid && _controller.platform is AndroidWebViewController) {
       // 디버깅 모드 활성화 (개발 중 오류 확인용)
       AndroidWebViewController.enableDebugging(true);
       // 파일 선택 버튼 클릭시 _androidFilePicker 함수 호출하도록 연결
@@ -87,7 +96,7 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  // 파일 선택창을 여는 함수
+  // 파일 선택창을 여는 함수 (Android 전용)
   // FileSelectorParams = 어떤 파일 타입을 받을지 정보 (이미지/비디오 등)
   // Future<List<String>> = 선택된 파일 경로 목록을 비동기로 반환
   Future<List<String>> _androidFilePicker(FileSelectorParams params) async {
