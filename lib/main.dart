@@ -84,7 +84,7 @@ class _WebViewPageState extends State<WebViewPage> {
         ),
       )
       // 열고 싶은 웹사이트 URL 로드
-      ..loadRequest(Uri.parse('https://fake-detector.kro.kr:25000/'));
+      ..loadRequest(Uri.parse('https://securemachineslab.com:25000/'));
 
     // Android 플랫폼인지 확인 후 파일 업로드 설정
     if (Platform.isAndroid && _controller.platform is AndroidWebViewController) {
